@@ -20,7 +20,7 @@ type BotTalkService struct {
 }
 
 func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
-	bot, err := im.NewTelegramBot("6062850243:AAG4Fn7i-NXI8o_VuWBdazPTlezV6ql4eVs")
+	bot, err := im.NewTelegramBot(tgbotToken)
 	if err != nil {
 		log.Panic(err)
 	}
