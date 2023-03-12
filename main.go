@@ -1,34 +1,31 @@
 package main
 
 import (
-	"log"
+	"flag"
 
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"chloe/ai"
+	"chloe/botservice"
+
+	"github.com/sashabaranov/go-openai"
 )
 
 func main() {
-	bot, err := tgbotapi.NewBotAPI("6062850243:AAG4Fn7i-NXI8o_VuWBdazPTlezV6ql4eVs")
-	if err != nil {
-		log.Panic(err)
+	tgBotToken := flag.String("tgtoken", "", "telegram bot token")
+	botName := flag.String("name", "Chloe", "ai bot name")
+	model := flag.String("model", openai.GPT3Dot5Turbo, "openai model")
+	apiKey := flag.String("aikey", "", "openai api key")
+
+	flag.Parse()
+	if *tgBotToken == "" || *botName == "" || *model == "" || *apiKey == "" {
+		panic("")
 	}
 
-	bot.Debug = true
-
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
-	updates := bot.GetUpdatesChan(u)
-
-	for update := range updates {
-		if update.Message != nil { // If we got a message
-			log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-			msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-			msg.ReplyToMessageID = update.Message.MessageID
-
-			bot.Send(msg)
-		}
+	openaiConfig := ai.AIConfig{
+		BotName: *botName,
+		Model:   *model,
+		ApiKey:  *apiKey,
 	}
+
+	service := botservice.NewTgBotService(*tgBotToken, openaiConfig)
+	service.Run()
 }
