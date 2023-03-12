@@ -4,5 +4,7 @@ github.com/go-telegram/bot v0.6.0 h1:zSY5WYGUvEV0C0ISiVR5mYIJHT4JqXmsOr6kzMRmKP0
 github.com/go-telegram/bot v0.6.0/go.mod h1:i2TRs7fXWIeaceF3z7KzsMt/he0TwkVC680mvdTFYeM=
 github.com/mbenkmann/goformat v0.0.0-20180512004123-256ef38c4271 h1:R1upFUZ69z1gp63mMqoTPO/5RldmXQDKtZoJdfNynSM=
 github.com/mbenkmann/goformat v0.0.0-20180512004123-256ef38c4271/go.mod h1:ypn5mvHcdkf5v4mZI4Rqt5RGj17IKAjoJlt8mFlXLS4=
+github.com/sashabaranov/go-openai v1.5.0 h1:4Gr/7g/KtVzW0ddn7TC2aUlyzvhZBIM+qRZ6Ae2kMa0=
+github.com/sashabaranov/go-openai v1.5.0/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
 winterdrache.de/goformat v0.0.0-20180512004123-256ef38c4271 h1:7RzwjFNamMx2zy/trI3eAVpEXuce2HwNWBbY9ZCX1Eo=
 winterdrache.de/goformat v0.0.0-20180512004123-256ef38c4271/go.mod h1:l7D1vfqorgZW4OOSPGR1M3Y4lQnRQJ0diYv8WPtUexg=

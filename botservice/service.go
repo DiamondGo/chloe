@@ -3,11 +3,12 @@
  */package botservice
 
 import (
+	"log"
+	"strings"
+
 	"chloe/ai"
 	"chloe/def"
 	"chloe/im"
-	"log"
-	"strings"
 )
 
 var puncs = []string{",", ".", "，", "。", "!", "?", "！", "？"}

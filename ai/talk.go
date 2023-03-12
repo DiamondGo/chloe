@@ -4,19 +4,22 @@
 package ai
 
 import (
-	"chloe/def"
-	"context"
 	"fmt"
 	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
+
+	"chloe/def"
+	"context"
 
 	"github.com/sashabaranov/go-openai"
 )
 
 const (
 	MaxMessageQueueToken = 3000
+	ContextAwareTime     = time.Minute
 )
 
 // / singleton client
@@ -38,9 +41,10 @@ func getOpenAIClient(apiKey string) *openai.Client {
 }
 
 type AIConfig struct {
-	BotName string
-	ApiKey  string
-	Model   string
+	BotName        string
+	ApiKey         string
+	Model          string
+	ContextTimeout int
 }
 
 type OpenAITalk struct {
@@ -48,6 +52,8 @@ type OpenAITalk struct {
 	bot          string
 	greeting     string
 	messageQueue []string
+	lastMessage  time.Time
+	contextAware time.Duration
 
 	model  string
 	client *openai.Client
@@ -56,12 +62,15 @@ type OpenAITalk struct {
 var talkId int64 = 0
 
 func NewTalk(cfg AIConfig) def.Conversation {
+	ctxTimeout := time.Duration(cfg.ContextTimeout) * time.Second
 	talk := &OpenAITalk{
-		id:       def.ConversationId(atomic.AddInt64(&talkId, 1)),
-		bot:      cfg.BotName,
-		greeting: fmt.Sprintf("Hello, I will call you %s in this conversation.", cfg.BotName),
-		model:    cfg.Model,
-		client:   getOpenAIClient(cfg.ApiKey),
+		id:           def.ConversationId(atomic.AddInt64(&talkId, 1)),
+		bot:          cfg.BotName,
+		greeting:     fmt.Sprintf("Hello, I will call you %s in this conversation.", cfg.BotName),
+		model:        cfg.Model,
+		client:       getOpenAIClient(cfg.ApiKey),
+		lastMessage:  time.Time{},
+		contextAware: ctxTimeout,
 	}
 	return talk
 }
@@ -89,6 +98,7 @@ func (conv *OpenAITalk) Ask(q string) string {
 			Messages: messages,
 		},
 	)
+	conv.lastMessage = time.Now()
 
 	if err != nil {
 		log.Printf("ChatCompletion error: %v\n", err)
@@ -102,7 +112,10 @@ func (conv *OpenAITalk) PrepareNewMessage(msg string) {
 
 	newQueue := []string{msg}
 
-	for i := len(conv.messageQueue) - 1; i > 0 && totalTtoken < MaxMessageQueueToken; i-- {
+	now := time.Now()
+	old := now.After(conv.lastMessage.Add(conv.contextAware))
+
+	for i := len(conv.messageQueue) - 1; i > 0 && totalTtoken < MaxMessageQueueToken && !old; i-- {
 		cnt := getTokenCount(conv.messageQueue[i])
 		if totalTtoken+cnt > MaxMessageQueueToken {
 			break
