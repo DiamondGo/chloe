@@ -6,6 +6,7 @@ package im
 import (
 	"chloe/def"
 	"log"
+	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
@@ -174,10 +175,22 @@ func (c *tgChat) SendMessage(m string) {
 
 func (c *tgChat) ReplyMessage(m string, to def.MessageID) {
 
-	msg := tgbotapi.NewMessage(int64(c.id), m)
+	mksafe := escapeSafeForMarkdown(m)
+	msg := tgbotapi.NewMessage(int64(c.id), mksafe)
+	msg.ParseMode = "MarkdownV2"
 	msg.ReplyToMessageID = int(to)
 
-	c.bot.api.Send(msg)
+	_, err := c.bot.api.Send(msg)
+	if err != nil {
+		log.Printf("error: %#v in sending message: %#v", err, msg)
+		fallbackMsg := tgbotapi.NewMessage(int64(c.id), m)
+		fallbackMsg.ParseMode = ""
+		fallbackMsg.ReplyToMessageID = int(to)
+		_, err := c.bot.api.Send(fallbackMsg)
+		if err != nil {
+			log.Printf("error: %#v in retry sending message: %#v", err, fallbackMsg)
+		}
+	}
 }
 
 func (c *tgChat) GetSelf() def.User {
@@ -207,4 +220,11 @@ func (u *tgUser) GetFirstName() string {
 
 func (u *tgUser) GetUserName() string {
 	return u.userName
+}
+
+func escapeSafeForMarkdown(s string) string {
+	s = strings.ReplaceAll(s, "!", `\!`)
+	s = strings.ReplaceAll(s, ".", `\.`)
+
+	return s
 }
