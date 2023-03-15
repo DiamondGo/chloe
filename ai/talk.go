@@ -64,9 +64,12 @@ var talkId int64 = 0
 func NewTalk(cfg AIConfig) def.Conversation {
 	ctxTimeout := time.Duration(cfg.ContextTimeout) * time.Second
 	talk := &OpenAITalk{
-		id:           def.ConversationId(atomic.AddInt64(&talkId, 1)),
-		bot:          cfg.BotName,
-		greeting:     fmt.Sprintf("Hello, I will call you %s in this conversation.", cfg.BotName),
+		id:  def.ConversationId(atomic.AddInt64(&talkId, 1)),
+		bot: cfg.BotName,
+		greeting: fmt.Sprintf(
+			"Hello, can I call you Chloe in our following coversation?",
+			cfg.BotName,
+		),
 		model:        cfg.Model,
 		client:       getOpenAIClient(cfg.ApiKey),
 		lastMessage:  time.Time{},

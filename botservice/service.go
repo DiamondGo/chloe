@@ -43,6 +43,7 @@ func (s *BotTalkService) Run() {
 
 		talk := s.talkFact.GetTalk(chat.GetID())
 		answer := talk.Ask(text)
+		log.Printf("receive question from %s: %s", m.GetUser().GetUserName(), text)
 
 		chat.ReplyMessage(answer, m.GetID())
 	}
