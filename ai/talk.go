@@ -5,7 +5,6 @@ package ai
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -14,6 +13,7 @@ import (
 	"chloe/def"
 	"context"
 
+	log "github.com/jeanphorn/log4go"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -94,19 +94,39 @@ func (conv *OpenAITalk) Ask(q string) string {
 			},
 		)
 	}
-	resp, err := conv.client.CreateChatCompletion(
-		context.Background(),
-		openai.ChatCompletionRequest{
-			Model:    conv.model,
-			Messages: messages,
-		},
-	)
-	conv.lastMessage = time.Now()
+	var resp openai.ChatCompletionResponse
+	var err error
+	retry := 2
+	for retry > 0 {
+		if func() bool {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			defer cancel()
+			resp, err = conv.client.CreateChatCompletion(
+				ctx,
+				openai.ChatCompletionRequest{
+					Model:    conv.model,
+					Messages: messages,
+				},
+			)
+			conv.lastMessage = time.Now()
+
+			if err != nil {
+				log.Info("ChatCompletion error: %v\n", err)
+				return false
+			}
+
+			return true
+		}() {
+			break
+		}
+		retry--
+	}
 
 	if err != nil {
-		log.Printf("ChatCompletion error: %v\n", err)
+		log.Info("failed to get response from openai.")
 		return ""
 	}
+
 	return resp.Choices[0].Message.Content
 }
 

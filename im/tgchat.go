@@ -5,10 +5,10 @@ package im
 
 import (
 	"chloe/def"
-	"log"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	log "github.com/jeanphorn/log4go"
 )
 
 type tgBotCache struct {
@@ -33,7 +33,7 @@ func NewTelegramBot(token string) (def.MessageBot, error) {
 
 	api, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
-		log.Fatalf("failed to initialize telegram bot")
+		log.Error("failed to initialize telegram bot")
 		return nil, err
 	}
 	bot.api = api
@@ -109,7 +109,7 @@ func (bot *TelegramBot) lookupUser(uid def.UserID, cid def.ChatID) def.User {
 	}
 	chatMember, err := bot.api.GetChatMember(chatMembersConfig)
 	if err != nil {
-		log.Fatalf("failed to get user %v", uid)
+		log.Error("failed to get user %v", uid)
 		return nil
 	}
 	user = &tgUser{
@@ -182,13 +182,13 @@ func (c *tgChat) ReplyMessage(m string, to def.MessageID) {
 
 	_, err := c.bot.api.Send(msg)
 	if err != nil {
-		log.Printf("error: %#v in sending message: %#v", err, msg)
+		log.Info("error: %#v in sending message: %#v", err, msg)
 		fallbackMsg := tgbotapi.NewMessage(int64(c.id), m)
 		fallbackMsg.ParseMode = ""
 		fallbackMsg.ReplyToMessageID = int(to)
 		_, err := c.bot.api.Send(fallbackMsg)
 		if err != nil {
-			log.Printf("error: %#v in retry sending message: %#v", err, fallbackMsg)
+			log.Info("error: %#v in retry sending message: %#v", err, fallbackMsg)
 		}
 	}
 }

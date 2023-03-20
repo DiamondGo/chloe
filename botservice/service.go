@@ -3,12 +3,17 @@
  */package botservice
 
 import (
-	"log"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"chloe/ai"
 	"chloe/def"
 	"chloe/im"
+
+	log "github.com/jeanphorn/log4go"
 )
 
 var puncs = []string{",", ".", "，", "。", "!", "?", "！", "？"}
@@ -17,37 +22,55 @@ type BotTalkService struct {
 	bot      def.MessageBot
 	talkFact def.ConversationFactory
 	config   ai.AIConfig
+	loop     bool
 }
 
 func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 	bot, err := im.NewTelegramBot(tgbotToken)
 	if err != nil {
-		log.Panic(err)
+		log.Error("failed to start telegram bot %v", err)
 	}
 	return &BotTalkService{
 		bot:      bot,
 		talkFact: ai.NewTalkFactory(aicfg),
 		config:   aicfg,
+		loop:     true,
 	}
 }
 
 func (s *BotTalkService) Run() {
-	for m := range s.bot.GetMessages() {
-		chat := m.GetChat()
-		memberCnt := chat.GetMemberCount()
-		text := m.GetText()
-		botUsername := chat.GetSelf().GetUserName()
-		if memberCnt > 2 && !s.isMentioned(text, botUsername) {
-			continue
+	sigchnl := make(chan os.Signal, 1)
+	signal.Notify(sigchnl)
+	go func() {
+		for {
+			sig := <-sigchnl
+			s.handleSignal(sig)
 		}
+	}()
+	for m := range s.bot.GetMessages() {
+		func() {
+			defer func() { _ = recover() }()
+			chat := m.GetChat()
+			memberCnt := chat.GetMemberCount()
+			text := m.GetText()
+			botUsername := chat.GetSelf().GetUserName()
+			if memberCnt > 2 && !s.isMentioned(text, botUsername) {
+				return
+			}
 
-		talk := s.talkFact.GetTalk(chat.GetID())
-		answer := talk.Ask(text)
-		log.Printf("receive question from %s: %s", m.GetUser().GetUserName(), text)
+			log.Info("received question from %s: %s", m.GetUser().GetUserName(), text)
+			talk := s.talkFact.GetTalk(chat.GetID())
+			answer := talk.Ask(text)
 
-		chat.ReplyMessage(answer, m.GetID())
+			chat.ReplyMessage(answer, m.GetID())
+			log.Info("replied to %s", m.GetUser().GetUserName())
+		}()
+		if !s.loop {
+			log.Info("stop running loop")
+			time.Sleep(time.Duration(time.Second * 3))
+			break
+		}
 	}
-
 }
 
 func (s *BotTalkService) isMentioned(text, botUsername string) bool {
@@ -100,4 +123,13 @@ func spliteByPunctuation(ss []string) []string {
 	}
 
 	return ss
+}
+
+func (s *BotTalkService) handleSignal(signal os.Signal) {
+	switch signal {
+	case syscall.SIGQUIT:
+		s.loop = false
+		log.Info("signal SIGQUIT received")
+	default:
+	}
 }

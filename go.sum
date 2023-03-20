@@ -2,11 +2,17 @@ github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGi
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
 github.com/go-telegram/bot v0.6.0 h1:zSY5WYGUvEV0C0ISiVR5mYIJHT4JqXmsOr6kzMRmKP0=
 github.com/go-telegram/bot v0.6.0/go.mod h1:i2TRs7fXWIeaceF3z7KzsMt/he0TwkVC680mvdTFYeM=
+github.com/jeanphorn/log4go v0.0.0-20190526082429-7dbb8deb9468 h1:1C4yN/psU4rpTqmuN8ZU7uzMyIvM8m4m6xgy6W0e/5k=
+github.com/jeanphorn/log4go v0.0.0-20190526082429-7dbb8deb9468/go.mod h1:VRGsDaBwSjfG6KG3PtW5uoGc+iqzEG3jEdo2b1ZwSJc=
 github.com/mbenkmann/goformat v0.0.0-20180512004123-256ef38c4271 h1:R1upFUZ69z1gp63mMqoTPO/5RldmXQDKtZoJdfNynSM=
 github.com/mbenkmann/goformat v0.0.0-20180512004123-256ef38c4271/go.mod h1:ypn5mvHcdkf5v4mZI4Rqt5RGj17IKAjoJlt8mFlXLS4=
 github.com/sashabaranov/go-openai v1.5.0 h1:4Gr/7g/KtVzW0ddn7TC2aUlyzvhZBIM+qRZ6Ae2kMa0=
 github.com/sashabaranov/go-openai v1.5.0/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
 github.com/sashabaranov/go-openai v1.5.1 h1:w9pO7L0X4CLuyH3NZ0WXBBU1wvPeA2JEcxMdlPosInY=
 github.com/sashabaranov/go-openai v1.5.1/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+github.com/sashabaranov/go-openai v1.5.3 h1:o6n6dj0h9u+5mE1m+D8eT0zYhh7229o8ymDd2zDwAXU=
+github.com/sashabaranov/go-openai v1.5.3/go.mod h1:lj5b/K+zjTSFxVLijLSTDZuP7adOgerWeFyZLUhAKRg=
+github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07 h1:d/VUIMNTk65Xz69htmRPNfjypq2uNRqVsymcXQu6kKk=
+github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07/go.mod h1:FbXpUxsx5in7z/OrWFDdhYetOy3/VGIJsVHN9G7RUPA=
 winterdrache.de/goformat v0.0.0-20180512004123-256ef38c4271 h1:7RzwjFNamMx2zy/trI3eAVpEXuce2HwNWBbY9ZCX1Eo=
 winterdrache.de/goformat v0.0.0-20180512004123-256ef38c4271/go.mod h1:l7D1vfqorgZW4OOSPGR1M3Y4lQnRQJ0diYv8WPtUexg=
