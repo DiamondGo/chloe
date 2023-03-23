@@ -1,7 +1,7 @@
 /*
  * mastercoderk@gmail.com
  */
-package ai
+ package ai
 
 import (
 	"fmt"
@@ -96,7 +96,7 @@ func (conv *OpenAITalk) Ask(q string) string {
 	}
 	var resp openai.ChatCompletionResponse
 	var err error
-	retry := 2
+	retry := 3
 	for retry > 0 {
 		if func() bool {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -124,7 +124,7 @@ func (conv *OpenAITalk) Ask(q string) string {
 
 	if err != nil {
 		log.Info("failed to get response from openai.")
-		return ""
+		return "I apologize, but the OpenAI API is currently experiencing high traffic. Kindly try again at a later time."
 	}
 
 	return resp.Choices[0].Message.Content
