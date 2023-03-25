@@ -8,6 +8,7 @@ package def
 type ChatID int64
 type UserID int64
 type MessageID int
+type CleanFunc func()
 
 type Chat interface {
 	GetID() ChatID
@@ -28,6 +29,7 @@ type Message interface {
 	GetUser() User
 	GetChat() Chat
 	GetText() string
+	GetVoice() (string, CleanFunc)
 }
 
 type MessageBot interface {
@@ -49,6 +51,10 @@ type Conversation interface {
 
 type ConversationFactory interface {
 	GetTalk(ChatID) Conversation
+}
+
+type SpeechToText interface {
+	Convert(voiceFile string) (string, error)
 }
 
 /// for service

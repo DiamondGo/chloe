@@ -4,8 +4,10 @@
 package im
 
 import (
-	"chloe/def"
 	"strings"
+
+	"chloe/def"
+	"chloe/util"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/jeanphorn/log4go"
@@ -59,12 +61,32 @@ func (bot *TelegramBot) messageLoop() {
 
 	for update := range updates {
 		if update.Message != nil { // If we got a message
-			m := &tgMessage{
-				id:     def.MessageID(update.Message.MessageID),
-				userId: def.UserID(update.Message.From.ID),
-				chatId: def.ChatID(update.Message.Chat.ID),
-				text:   update.Message.Text,
-				bot:    bot,
+			var m def.Message
+			if update.Message.Voice != nil {
+				// process voice
+				fd := update.Message.Voice.FileID
+				link, err := bot.api.GetFileDirectURL(fd)
+				if err != nil {
+					log.Warn("failed to get voice download link")
+				}
+				log.Debug("voice file link %s", link)
+				voiceFile, cleaner := util.DownloadTempFile(link)
+				m = &tgMessage{
+					id:         def.MessageID(update.Message.MessageID),
+					userId:     def.UserID(update.Message.From.ID),
+					chatId:     def.ChatID(update.Message.Chat.ID),
+					bot:        bot,
+					audioFile:  voiceFile,
+					audioClean: cleaner,
+				}
+			} else if update.Message.Text != "" {
+				m = &tgMessage{
+					id:     def.MessageID(update.Message.MessageID),
+					userId: def.UserID(update.Message.From.ID),
+					chatId: def.ChatID(update.Message.Chat.ID),
+					bot:    bot,
+					text:   update.Message.Text,
+				}
 			}
 
 			bot.msgQueue <- m
@@ -130,10 +152,12 @@ func (bot *TelegramBot) lookupUser(uid def.UserID, cid def.ChatID) def.User {
 }
 
 type tgMessage struct {
-	id     def.MessageID
-	userId def.UserID
-	chatId def.ChatID
-	text   string
+	id         def.MessageID
+	userId     def.UserID
+	chatId     def.ChatID
+	text       string
+	audioFile  string
+	audioClean def.CleanFunc
 
 	bot *TelegramBot
 }
@@ -152,6 +176,10 @@ func (m *tgMessage) GetChat() def.Chat {
 
 func (m *tgMessage) GetText() string {
 	return m.text
+}
+
+func (m *tgMessage) GetVoice() (string, def.CleanFunc) {
+	return m.audioFile, m.audioClean
 }
 
 type tgChat struct {

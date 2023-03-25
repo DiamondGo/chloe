@@ -5,6 +5,7 @@
 import (
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"chloe/ai"
 	"chloe/def"
 	"chloe/im"
+	"chloe/util"
 
 	log "github.com/jeanphorn/log4go"
 )
@@ -19,10 +21,11 @@ import (
 var puncs = []string{",", ".", "，", "。", "!", "?", "！", "？"}
 
 type BotTalkService struct {
-	bot      def.MessageBot
-	talkFact def.ConversationFactory
-	config   ai.AIConfig
-	loop     bool
+	bot          def.MessageBot
+	talkFact     def.ConversationFactory
+	speechToText def.SpeechToText
+	config       ai.AIConfig
+	loop         bool
 }
 
 func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
@@ -31,10 +34,11 @@ func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 		log.Error("failed to start telegram bot %v", err)
 	}
 	return &BotTalkService{
-		bot:      bot,
-		talkFact: ai.NewTalkFactory(aicfg),
-		config:   aicfg,
-		loop:     true,
+		bot:          bot,
+		talkFact:     ai.NewTalkFactory(aicfg),
+		speechToText: ai.NewSpeech2Text(aicfg.ApiKey),
+		config:       aicfg,
+		loop:         true,
 	}
 }
 
@@ -52,8 +56,28 @@ func (s *BotTalkService) Run() {
 			defer func() { _ = recover() }()
 			chat := m.GetChat()
 			memberCnt := chat.GetMemberCount()
-			text := m.GetText()
 			botUsername := chat.GetSelf().GetUserName()
+
+			var text string
+			var err error
+
+			//
+			voice, cleaner := m.GetVoice()
+			if voice != "" {
+				defer cleaner()
+				// get text from voice
+				if strings.EqualFold(filepath.Ext(voice), ".oga") {
+					voice, cleaner = util.ConvertToMp3(voice)
+					defer cleaner()
+				}
+				text, err = s.speechToText.Convert(voice)
+				if err != nil {
+					log.Warn("speech to text failed, %v", err)
+				}
+			} else if m.GetText() != "" {
+				text = m.GetText()
+			}
+
 			if memberCnt > 2 && !s.isMentioned(text, botUsername) {
 				return
 			}

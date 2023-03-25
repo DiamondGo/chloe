@@ -12,7 +12,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-func main() {
+func initLog() {
 	// init app
 	exe, err := os.Executable()
 	if err != nil {
@@ -28,6 +28,10 @@ func main() {
 	flw.SetRotateSize(1024 * 1024 * 5)
 	flw.SetRotateMaxBackup(5)
 	log.AddFilter("DEFAULT", log.DEBUG, flw)
+}
+
+func main() {
+	initLog()
 	log.Info("openai bot Chloe Started.")
 
 	tgBotToken := flag.String("tgtoken", "", "telegram bot token")
