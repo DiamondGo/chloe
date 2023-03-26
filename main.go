@@ -1,3 +1,7 @@
+/*
+ * mastercoderk@gmail.com
+ */
+
 package main
 
 import (

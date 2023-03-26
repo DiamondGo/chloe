@@ -1,6 +1,8 @@
 /*
  * mastercoderk@gmail.com
- */package botservice
+ */
+ 
+ package botservice
 
 import (
 	"os"
@@ -71,6 +73,7 @@ func (s *BotTalkService) Run() {
 					defer cleaner()
 				}
 				text, err = s.speechToText.Convert(voice)
+				log.Debug("voice converted to text as: %s", text)
 				if err != nil {
 					log.Warn("speech to text failed, %v", err)
 				}

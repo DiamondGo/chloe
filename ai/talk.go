@@ -1,7 +1,8 @@
 /*
  * mastercoderk@gmail.com
  */
- package ai
+
+package ai
 
 import (
 	"fmt"
@@ -47,11 +48,16 @@ type AIConfig struct {
 	ContextTimeout int
 }
 
+type qa struct {
+	q string
+	a string
+}
+
 type OpenAITalk struct {
 	id           def.ConversationId
 	bot          string
-	greeting     string
-	messageQueue []string
+	greeting     qa
+	messageQueue []qa
 	lastMessage  time.Time
 	contextAware time.Duration
 
@@ -66,10 +72,16 @@ func NewTalk(cfg AIConfig) def.Conversation {
 	talk := &OpenAITalk{
 		id:  def.ConversationId(atomic.AddInt64(&talkId, 1)),
 		bot: cfg.BotName,
-		greeting: fmt.Sprintf(
-			"Hello, can I call you Chloe in our following coversation?",
-			cfg.BotName,
-		),
+		greeting: qa{
+			q: fmt.Sprintf(
+				"Hello, can I call you %s in our following coversation?",
+				cfg.BotName,
+			),
+			a: fmt.Sprintf(
+				"Of course, you can call me %s. How can I assist you today?",
+				cfg.BotName,
+			),
+		},
 		model:        cfg.Model,
 		client:       getOpenAIClient(cfg.ApiKey),
 		lastMessage:  time.Time{},
@@ -90,9 +102,17 @@ func (conv *OpenAITalk) Ask(q string) string {
 		messages = append(messages,
 			openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
-				Content: msg,
+				Content: msg.q,
 			},
 		)
+		if msg.a != "" {
+			messages = append(messages,
+				openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleAssistant,
+					Content: msg.a,
+				},
+			)
+		}
 	}
 	var resp openai.ChatCompletionResponse
 	var err error
@@ -127,19 +147,29 @@ func (conv *OpenAITalk) Ask(q string) string {
 		return "I apologize, but the OpenAI API is currently experiencing high traffic. Kindly try again at a later time."
 	}
 
-	return resp.Choices[0].Message.Content
+	answer := resp.Choices[0].Message.Content
+	if answer != "" {
+		conv.messageQueue[len(conv.messageQueue)-1].a = answer
+	}
+	return answer
 }
 
 func (conv *OpenAITalk) PrepareNewMessage(msg string) {
-	totalTtoken := getTokenCount(conv.greeting) + getTokenCount(msg)
+	totalTtoken := getTokenCount(
+		msg,
+	) + getTokenCount(
+		conv.greeting.q,
+	) + getTokenCount(
+		conv.greeting.a,
+	)
 
-	newQueue := []string{msg}
+	newQueue := []qa{{q: msg}}
 
 	now := time.Now()
 	old := now.After(conv.lastMessage.Add(conv.contextAware))
 
 	for i := len(conv.messageQueue) - 1; i > 0 && totalTtoken < MaxMessageQueueToken && !old; i-- {
-		cnt := getTokenCount(conv.messageQueue[i])
+		cnt := getTokenCount(conv.messageQueue[i].q) + getTokenCount(conv.messageQueue[i].a)
 		if totalTtoken+cnt > MaxMessageQueueToken {
 			break
 		}
@@ -149,9 +179,9 @@ func (conv *OpenAITalk) PrepareNewMessage(msg string) {
 	newQueue = append(newQueue, conv.greeting)
 
 	for i := 0; i < (len(newQueue) - 1 - i); i++ {
-		msg := newQueue[i]
+		m := newQueue[i]
 		newQueue[i] = newQueue[len(newQueue)-1-i]
-		newQueue[len(newQueue)-1-i] = msg
+		newQueue[len(newQueue)-1-i] = m
 	}
 
 	conv.messageQueue = newQueue

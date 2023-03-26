@@ -1,6 +1,8 @@
 /*
  * mastercoderk@gmail.com
- */package util
+ */
+ 
+ package util
 
 import (
 	"io"
