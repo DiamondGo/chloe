@@ -85,7 +85,9 @@ func (s *BotTalkService) Run() {
 
 			if strings.HasPrefix(text, "/draw ") {
 				// draw image
-				img, cleaner, err := s.imageGenerator.Generate(text[len("/draw "):])
+				desc := text[len("/draw "):]
+				log.Debug("received image request: %s", desc)
+				img, cleaner, err := s.imageGenerator.Generate(desc)
 				if err != nil {
 					chat.ReplyMessage(err.Error(), m.GetID())
 					return
