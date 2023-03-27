@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -83,11 +84,10 @@ func (s *BotTalkService) Run() {
 				text = m.GetText()
 			}
 
-			if strings.HasPrefix(text, "/draw ") {
+			if size, desc := s.isDrawCommand(text); size != "" {
 				// draw image
-				desc := text[len("/draw "):]
-				log.Debug("received image request: %s", desc)
-				img, cleaner, err := s.imageGenerator.Generate(desc)
+				log.Debug("received image request from %s: %s", m.GetUser().GetUserName(), text)
+				img, cleaner, err := s.imageGenerator.Generate(desc, size)
 				if err != nil {
 					chat.ReplyMessage(err.Error(), m.GetID())
 					return
@@ -173,5 +173,30 @@ func (s *BotTalkService) handleSignal(signal os.Signal) {
 		s.loop = false
 		log.Info("signal SIGQUIT received")
 	default:
+	}
+}
+
+func (s *BotTalkService) isDrawCommand(text string) (string, string) {
+	pat := regexp.MustCompile(`^/(?P<drawcmd>(draw|drawbig|drawsmall))\s+(?P<desc>.*)`)
+	match := pat.FindStringSubmatch(text)
+
+	result := make(map[string]string)
+	for i, name := range pat.SubexpNames() {
+		if i != 0 && name != "" && len(match) > i {
+			result[name] = match[i]
+		}
+	}
+
+	cmd, _ := result["drawcmd"]
+	desc, _ := result["desc"]
+	switch cmd {
+	case "draw":
+		return "m", desc
+	case "drawbig":
+		return "b", desc
+	case "drawsmall":
+		return "s", desc
+	default:
+		return "", ""
 	}
 }

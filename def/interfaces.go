@@ -60,7 +60,7 @@ type SpeechToText interface {
 }
 
 type ImageGenerator interface {
-	Generate(desc string) (string, CleanFunc, error)
+	Generate(desc, size string) (string, CleanFunc, error)
 }
 
 /// for service

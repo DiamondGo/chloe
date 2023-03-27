@@ -29,12 +29,21 @@ func NewImageGenerator(apiKey string) def.ImageGenerator {
 	}
 }
 
-func (d *dalle) Generate(desc string) (string, def.CleanFunc, error) {
+func (d *dalle) Generate(desc, size string) (string, def.CleanFunc, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
 	defer cancel()
+	var imgSize string
+	switch size {
+	case "m":
+		imgSize = openai.CreateImageSize512x512
+	case "s":
+		imgSize = openai.CreateImageSize256x256
+	case "b":
+		imgSize = openai.CreateImageSize1024x1024
+	}
 	reqBase64 := openai.ImageRequest{
 		Prompt:         desc,
-		Size:           openai.CreateImageSize512x512,
+		Size:           imgSize,
 		ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 		N:              1,
 	}
