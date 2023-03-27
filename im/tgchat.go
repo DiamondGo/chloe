@@ -5,6 +5,8 @@
 package im
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"chloe/def"
@@ -219,6 +221,40 @@ func (c *tgChat) ReplyMessage(m string, to def.MessageID) {
 		if err != nil {
 			log.Info("error: %#v in retry sending message: %#v", err, fallbackMsg)
 		}
+	}
+}
+
+func (c *tgChat) ReplyImage(img string, to def.MessageID) {
+	f, err := os.Open(img)
+	if err != nil {
+		log.Error("open image file %s failed, %v", img, err)
+		return
+	}
+	defer f.Close()
+
+	fileInfo, err := f.Stat()
+	if err != nil {
+		log.Error("stat image file %s failed, %v", img, err)
+		return
+	}
+	fileSize := fileInfo.Size()
+
+	buffer := make([]byte, fileSize)
+	_, err = f.Read(buffer)
+	if err != nil {
+		log.Error("read image file %s failed, %v", img, err)
+		return
+	}
+
+	requestFileData := &tgbotapi.FileBytes{
+		Name:  filepath.Base(f.Name()),
+		Bytes: buffer,
+	}
+
+	photoMsg := tgbotapi.NewPhoto(int64(c.id), requestFileData)
+	photoMsg.ReplyToMessageID = int(to)
+	if _, err = c.bot.api.Send(photoMsg); err != nil {
+		log.Error("failed to send image to user")
 	}
 }
 

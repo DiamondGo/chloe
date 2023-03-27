@@ -1,8 +1,8 @@
 /*
  * mastercoderk@gmail.com
  */
- 
- package botservice
+
+package botservice
 
 import (
 	"os"
@@ -23,11 +23,12 @@ import (
 var puncs = []string{",", ".", "，", "。", "!", "?", "！", "？"}
 
 type BotTalkService struct {
-	bot          def.MessageBot
-	talkFact     def.ConversationFactory
-	speechToText def.SpeechToText
-	config       ai.AIConfig
-	loop         bool
+	bot            def.MessageBot
+	talkFact       def.ConversationFactory
+	speechToText   def.SpeechToText
+	imageGenerator def.ImageGenerator
+	config         ai.AIConfig
+	loop           bool
 }
 
 func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
@@ -36,11 +37,12 @@ func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 		log.Error("failed to start telegram bot %v", err)
 	}
 	return &BotTalkService{
-		bot:          bot,
-		talkFact:     ai.NewTalkFactory(aicfg),
-		speechToText: ai.NewSpeech2Text(aicfg.ApiKey),
-		config:       aicfg,
-		loop:         true,
+		bot:            bot,
+		talkFact:       ai.NewTalkFactory(aicfg),
+		speechToText:   ai.NewSpeech2Text(aicfg.ApiKey),
+		imageGenerator: ai.NewImageGenerator(aicfg.ApiKey),
+		config:         aicfg,
+		loop:           true,
 	}
 }
 
@@ -81,16 +83,27 @@ func (s *BotTalkService) Run() {
 				text = m.GetText()
 			}
 
-			if memberCnt > 2 && !s.isMentioned(text, botUsername) {
-				return
+			if strings.HasPrefix(text, "/draw ") {
+				// draw image
+				img, cleaner, err := s.imageGenerator.Generate(text[len("/draw "):])
+				if err != nil {
+					chat.ReplyMessage(err.Error(), m.GetID())
+					return
+				}
+				defer cleaner()
+				chat.ReplyImage(img, m.GetID())
+			} else {
+				if memberCnt > 2 && !s.isMentioned(text, botUsername) {
+					return
+				}
+
+				log.Info("received question from %s: %s", m.GetUser().GetUserName(), text)
+				talk := s.talkFact.GetTalk(chat.GetID())
+				answer := talk.Ask(text)
+
+				chat.ReplyMessage(answer, m.GetID())
+				log.Info("replied to %s", m.GetUser().GetUserName())
 			}
-
-			log.Info("received question from %s: %s", m.GetUser().GetUserName(), text)
-			talk := s.talkFact.GetTalk(chat.GetID())
-			answer := talk.Ask(text)
-
-			chat.ReplyMessage(answer, m.GetID())
-			log.Info("replied to %s", m.GetUser().GetUserName())
 		}()
 		if !s.loop {
 			log.Info("stop running loop")

@@ -16,6 +16,7 @@ type Chat interface {
 	GetMemberCount() int
 	SendMessage(string)
 	ReplyMessage(string, MessageID)
+	ReplyImage(string, MessageID)
 	GetSelf() User
 }
 
@@ -56,6 +57,10 @@ type ConversationFactory interface {
 
 type SpeechToText interface {
 	Convert(voiceFile string) (string, error)
+}
+
+type ImageGenerator interface {
+	Generate(desc string) (string, CleanFunc, error)
 }
 
 /// for service
