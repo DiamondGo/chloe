@@ -30,7 +30,7 @@ func NewImageGenerator(apiKey string) def.ImageGenerator {
 }
 
 func (d *dalle) Generate(desc, size string) (string, def.CleanFunc, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*60)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
 	defer cancel()
 	var imgSize string
 	switch size {
