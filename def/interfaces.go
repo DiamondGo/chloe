@@ -16,6 +16,7 @@ type Chat interface {
 	GetMemberCount() int
 	SendMessage(string)
 	ReplyMessage(string, MessageID)
+	QuoteMessage(message string, replyTo MessageID, quote string)
 	ReplyImage(string, MessageID)
 	GetSelf() User
 }

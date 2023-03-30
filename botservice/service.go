@@ -103,7 +103,11 @@ func (s *BotTalkService) Run() {
 				talk := s.talkFact.GetTalk(chat.GetID())
 				answer := talk.Ask(text)
 
-				chat.ReplyMessage(answer, m.GetID())
+				if voice == "" {
+					chat.ReplyMessage(answer, m.GetID())
+				} else {
+					chat.QuoteMessage(answer, m.GetID(), "Transcription:\n"+text)
+				}
 				log.Info("replied to %s", m.GetUser().GetUserName())
 			}
 		}()

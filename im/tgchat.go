@@ -5,6 +5,7 @@
 package im
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -221,6 +222,23 @@ func (c *tgChat) ReplyMessage(m string, to def.MessageID) {
 		if err != nil {
 			log.Info("error: %#v in retry sending message: %#v", err, fallbackMsg)
 		}
+	}
+}
+
+func (c *tgChat) QuoteMessage(m string, to def.MessageID, quote string) {
+	mksafe := fmt.Sprintln(
+		"```"+"\n"+escapeSafeForMarkdown(quote)+"```",
+	) + "  \n" + escapeSafeForMarkdown(
+		m,
+	)
+
+	msg := tgbotapi.NewMessage(int64(c.id), mksafe)
+	msg.ParseMode = "MarkdownV2"
+	msg.ReplyToMessageID = int(to)
+
+	_, err := c.bot.api.Send(msg)
+	if err != nil {
+		log.Info("error: %#v in sending message: %#v", err, mksafe)
 	}
 }
 
