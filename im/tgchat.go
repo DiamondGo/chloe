@@ -5,7 +5,6 @@
 package im
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -226,11 +225,10 @@ func (c *tgChat) ReplyMessage(m string, to def.MessageID) {
 }
 
 func (c *tgChat) QuoteMessage(m string, to def.MessageID, quote string) {
-	mksafe := fmt.Sprintln(
-		"```"+"\n"+escapeSafeForMarkdown(quote)+"```",
-	) + "  \n" + escapeSafeForMarkdown(
-		m,
-	)
+	mksafe := "_*" + escapeSafeForMarkdown(quote) + "*_"
+	mksafe += "  \n"
+	mksafe += "  \n"
+	mksafe += escapeSafeForMarkdown(m)
 
 	msg := tgbotapi.NewMessage(int64(c.id), mksafe)
 	msg.ParseMode = "MarkdownV2"
