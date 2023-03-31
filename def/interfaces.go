@@ -18,6 +18,7 @@ type Chat interface {
 	ReplyMessage(string, MessageID)
 	QuoteMessage(message string, replyTo MessageID, quote string)
 	ReplyImage(string, MessageID)
+	ReplyVoice(aud string, to MessageID)
 	GetSelf() User
 }
 
@@ -58,6 +59,10 @@ type ConversationFactory interface {
 
 type SpeechToText interface {
 	Convert(voiceFile string) (string, error)
+}
+
+type TextToSpeech interface {
+	Convert(text string) (string, CleanFunc, error)
 }
 
 type ImageGenerator interface {

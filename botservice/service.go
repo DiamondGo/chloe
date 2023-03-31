@@ -27,6 +27,7 @@ type BotTalkService struct {
 	bot            def.MessageBot
 	talkFact       def.ConversationFactory
 	speechToText   def.SpeechToText
+	textToSpeech   def.TextToSpeech
 	imageGenerator def.ImageGenerator
 	config         ai.AIConfig
 	loop           bool
@@ -41,6 +42,7 @@ func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 		bot:            bot,
 		talkFact:       ai.NewTalkFactory(aicfg),
 		speechToText:   ai.NewSpeech2Text(aicfg.ApiKey),
+		textToSpeech:   ai.NewPyServiceTTS(),
 		imageGenerator: ai.NewImageGenerator(aicfg.ApiKey),
 		config:         aicfg,
 		loop:           true,
@@ -66,7 +68,6 @@ func (s *BotTalkService) Run() {
 			var text string
 			var err error
 
-			//
 			voice, cleaner := m.GetVoice()
 			if voice != "" {
 				defer cleaner()
@@ -76,7 +77,6 @@ func (s *BotTalkService) Run() {
 					defer cleaner()
 				}
 				text, err = s.speechToText.Convert(voice)
-				log.Debug("voice converted to text as: %s", text)
 				if err != nil {
 					log.Warn("speech to text failed, %v", err)
 				}
@@ -107,6 +107,13 @@ func (s *BotTalkService) Run() {
 					chat.ReplyMessage(answer, m.GetID())
 				} else {
 					chat.QuoteMessage(answer, m.GetID(), "Transcription:\n"+text)
+					if vf, cleaner, err := s.textToSpeech.Convert(answer); err != nil {
+						log.Error(`convert text "%s" to speech failed, %v`, text, err)
+					} else {
+						defer cleaner()
+						chat.ReplyVoice(vf, m.GetID())
+						log.Info("voice replied to %s", m.GetUser().GetUserName())
+					}
 				}
 				log.Info("replied to %s", m.GetUser().GetUserName())
 			}

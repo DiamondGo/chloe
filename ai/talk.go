@@ -124,8 +124,9 @@ func (conv *OpenAITalk) Ask(q string) string {
 			resp, err = conv.client.CreateChatCompletion(
 				ctx,
 				openai.ChatCompletionRequest{
-					Model:    conv.model,
-					Messages: messages,
+					Model:       conv.model,
+					Messages:    messages,
+					Temperature: 0.9,
 				},
 			)
 			conv.lastMessage = time.Now()

@@ -1,0 +1,3 @@
+[submodule "pyservice"]
+	path = pyservice
+	url = https://github.com/DiamondGo/pyservice.git
