@@ -301,12 +301,13 @@ func (c *tgChat) ReplyVoice(aud string, to def.MessageID) {
 		Bytes: buffer,
 	}
 
-	var media tgbotapi.MediaGroupConfig
-	vm := tgbotapi.NewInputMediaAudio(requestFileData)
-	media.Media = append(media.Media, vm)
-
-	voiceMsg := tgbotapi.NewMediaGroup(int64(c.id), media.Media)
-	//voiceMsg := tgbotapi.NewAudio(int64(c.id), requestFileData)
+	/*
+		var media tgbotapi.MediaGroupConfig
+		vm := tgbotapi.NewInputMediaAudio(requestFileData)
+		media.Media = append(media.Media, vm)
+		voiceMsg := tgbotapi.NewMediaGroup(int64(c.id), media.Media)
+	*/
+	voiceMsg := tgbotapi.NewAudio(int64(c.id), requestFileData)
 	voiceMsg.ReplyToMessageID = int(to)
 	if _, err = c.bot.api.Send(voiceMsg); err != nil {
 		log.Error("failed to send image to user %v", err)
