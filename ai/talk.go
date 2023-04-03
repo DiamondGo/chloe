@@ -21,6 +21,7 @@ import (
 const (
 	MaxMessageQueueToken = 3000
 	ContextAwareTime     = time.Minute
+	CompletionTimeout    = 60 * time.Second
 )
 
 // / singleton client
@@ -119,7 +120,7 @@ func (conv *OpenAITalk) Ask(q string) string {
 	retry := 3
 	for retry > 0 {
 		if func() bool {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+			ctx, cancel := context.WithTimeout(context.Background(), CompletionTimeout)
 			defer cancel()
 			resp, err = conv.client.CreateChatCompletion(
 				ctx,

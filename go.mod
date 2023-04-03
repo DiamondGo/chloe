@@ -3,6 +3,7 @@ module chloe
 go 1.20
 
 require (
+	github.com/DiamondGo/gohelper v0.9.1 // indirect
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.3 // indirect

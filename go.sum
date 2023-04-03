@@ -1,3 +1,5 @@
+github.com/DiamondGo/gohelper v0.9.1 h1:xoYDSpIjdgAclxX3o9uAIEo7WN2yIERdK1K5QogfbCw=
+github.com/DiamondGo/gohelper v0.9.1/go.mod h1:DjPdv0u6HwApzWKkXO32VLA7ugOAoCWhUqIsLzMxSrE=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1 h1:wG8n/XJQ07TmjbITcGiUaOtXxdrINDz1b0J1w0SzqDc=
 github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1/go.mod h1:A2S0CWkNylc2phvKXWBBdD3K0iGnDBGbzRpISP2zBl8=
 github.com/go-telegram/bot v0.6.0 h1:zSY5WYGUvEV0C0ISiVR5mYIJHT4JqXmsOr6kzMRmKP0=

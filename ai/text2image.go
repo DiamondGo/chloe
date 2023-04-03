@@ -17,6 +17,10 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
+const (
+	ImageGenerateTimeout = 120 * time.Second
+)
+
 // / image generate
 type dalle struct {
 	client *openai.Client
@@ -30,7 +34,7 @@ func NewImageGenerator(apiKey string) def.ImageGenerator {
 }
 
 func (d *dalle) Generate(desc, size string) (string, def.CleanFunc, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*120)
+	ctx, cancel := context.WithTimeout(context.Background(), ImageGenerateTimeout)
 	defer cancel()
 	var imgSize string
 	switch size {

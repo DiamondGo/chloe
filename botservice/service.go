@@ -18,6 +18,7 @@ import (
 	"chloe/im"
 	"chloe/util"
 
+	"github.com/DiamondGo/gohelper"
 	log "github.com/jeanphorn/log4go"
 )
 
@@ -51,6 +52,7 @@ func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 
 func (s *BotTalkService) Run() {
 	sigchnl := make(chan os.Signal, 1)
+	pool := gohelper.NewTaskPool[def.UserID](3, 1)
 	signal.Notify(sigchnl)
 	go func() {
 		for {
@@ -59,7 +61,7 @@ func (s *BotTalkService) Run() {
 		}
 	}()
 	for m := range s.bot.GetMessages() {
-		func() {
+		task := func() {
 			defer func() { _ = recover() }()
 			chat := m.GetChat()
 			memberCnt := chat.GetMemberCount()
@@ -117,7 +119,9 @@ func (s *BotTalkService) Run() {
 				}
 				log.Info("replied to %s", m.GetUser().GetUserName())
 			}
-		}()
+		}
+		uid := m.GetUser().GetID()
+		pool.Run(uid, task)
 		if !s.loop {
 			log.Info("stop running loop")
 			time.Sleep(time.Duration(time.Second * 3))
