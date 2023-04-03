@@ -88,7 +88,12 @@ func (s *BotTalkService) Run() {
 
 			if size, desc := s.isDrawCommand(text); size != "" {
 				// draw image
-				log.Debug("received image request from %s: %s", m.GetUser().GetUserName(), text)
+				log.Debug(
+					"received image request from %s, id %d: %s",
+					m.GetUser().GetUserName(),
+					m.GetUser().GetID(),
+					text,
+				)
 				img, cleaner, err := s.imageGenerator.Generate(desc, size)
 				if err != nil {
 					chat.ReplyMessage(err.Error(), m.GetID())
@@ -101,7 +106,7 @@ func (s *BotTalkService) Run() {
 					return
 				}
 
-				log.Info("received question from %s: %s", m.GetUser().GetUserName(), text)
+				log.Info("received question from %s, id %d: %s", m.GetUser().GetUserName(), m.GetUser().GetID(), text)
 				talk := s.talkFact.GetTalk(chat.GetID())
 				answer := talk.Ask(text)
 
