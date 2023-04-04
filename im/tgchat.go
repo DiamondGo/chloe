@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"chloe/def"
 	"chloe/util"
@@ -17,6 +18,7 @@ import (
 )
 
 type tgBotCache struct {
+	guard sync.Mutex
 	chats map[def.ChatID]def.Chat
 	users map[def.ChatID]map[def.UserID]def.User
 }
@@ -98,11 +100,10 @@ func (bot *TelegramBot) messageLoop() {
 }
 
 func (bot *TelegramBot) lookupChat(id def.ChatID) def.Chat {
-	if chat, exists := bot.cache.chats[id]; exists {
+	var chat def.Chat
+	if chat = bot.cache.getChatById(id); chat != nil {
 		return chat
 	}
-
-	var chat def.Chat
 
 	count, _ := bot.api.GetChatMembersCount(tgbotapi.ChatMemberCountConfig{
 		ChatConfig: tgbotapi.ChatConfig{
@@ -115,13 +116,13 @@ func (bot *TelegramBot) lookupChat(id def.ChatID) def.Chat {
 		bot:         bot,
 	}
 
-	bot.cache.chats[id] = chat
+	bot.cache.cacheChatById(id, chat)
 
 	return chat
 }
 
 func (bot *TelegramBot) lookupUser(uid def.UserID, cid def.ChatID) def.User {
-	if user, exists := bot.cache.users[cid][uid]; exists {
+	if user := bot.cache.getChatUser(cid, uid); user != nil {
 		return user
 	}
 
@@ -144,12 +145,7 @@ func (bot *TelegramBot) lookupUser(uid def.UserID, cid def.ChatID) def.User {
 		chatId:    cid,
 	}
 
-	chat, exists := bot.cache.users[cid]
-	if !exists {
-		chat = make(map[def.UserID]def.User)
-		bot.cache.users[cid] = chat
-	}
-	chat[uid] = user
+	bot.cache.cacheChatUser(cid, uid, user)
 
 	return user
 }
@@ -358,4 +354,43 @@ func escapeSafeForMarkdown(s string) string {
 	s = strings.ReplaceAll(s, "=", `\=`)
 
 	return s
+}
+
+func (c *tgBotCache) getChatById(id def.ChatID) def.Chat {
+	c.guard.Lock()
+	defer c.guard.Unlock()
+
+	if chat, exists := c.chats[id]; exists {
+		return chat
+	}
+	return nil
+}
+
+func (c *tgBotCache) cacheChatById(id def.ChatID, chat def.Chat) {
+	c.guard.Lock()
+	defer c.guard.Unlock()
+
+	c.chats[id] = chat
+}
+
+func (c *tgBotCache) getChatUser(cid def.ChatID, uid def.UserID) def.User {
+	c.guard.Lock()
+	defer c.guard.Unlock()
+
+	if user, exists := c.users[cid][uid]; exists {
+		return user
+	}
+	return nil
+}
+
+func (c *tgBotCache) cacheChatUser(cid def.ChatID, uid def.UserID, user def.User) {
+	c.guard.Lock()
+	defer c.guard.Unlock()
+
+	chat, exists := c.users[cid]
+	if !exists {
+		chat = make(map[def.UserID]def.User)
+		c.users[cid] = chat
+	}
+	chat[uid] = user
 }

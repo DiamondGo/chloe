@@ -61,6 +61,13 @@ func (s *BotTalkService) Run() {
 		}
 	}()
 	for m := range s.bot.GetMessages() {
+		var uid def.UserID
+		if m == nil || m.GetUser() == nil || m.GetUser().GetID() == uid || m.GetChat() == nil {
+			log.Warn("received empty message, skip it")
+			continue
+		}
+
+		uid = m.GetUser().GetID()
 		task := func() {
 			defer func() { _ = recover() }()
 			chat := m.GetChat()
@@ -125,7 +132,6 @@ func (s *BotTalkService) Run() {
 				log.Info("replied to %s", m.GetUser().GetUserName())
 			}
 		}
-		uid := m.GetUser().GetID()
 		pool.Run(uid, task)
 		if !s.loop {
 			log.Info("stop running loop")
