@@ -64,6 +64,12 @@ func (s *BotTalkService) Run() {
 		var uid def.UserID
 		if m == nil || m.GetUser() == nil || m.GetUser().GetID() == uid || m.GetChat() == nil {
 			log.Warn("received empty message, skip it")
+			if m == nil {
+				log.Debug("message is nil")
+				continue
+			}
+			log.Debug("message user is %v", m.GetUser())
+			log.Debug("message chat is %v", m.GetChat())
 			continue
 		}
 
