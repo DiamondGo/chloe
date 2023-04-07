@@ -21,7 +21,7 @@ import (
 const (
 	MaxMessageQueueToken = 3000
 	ContextAwareTime     = time.Minute
-	CompletionTimeout    = 60 * time.Second
+	CompletionTimeout    = 100 * time.Second
 )
 
 // / singleton client
