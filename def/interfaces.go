@@ -4,12 +4,22 @@
 
 package def
 
+import "strconv"
+
 /// IM interface
 
 type ChatID int64
 type UserID int64
 type MessageID int
 type CleanFunc func()
+
+func (uid UserID) String() string {
+	return strconv.FormatInt(int64(uid), 10)
+}
+
+func (cid ChatID) String() string {
+	return strconv.FormatInt(int64(cid), 10)
+}
 
 type Chat interface {
 	GetID() ChatID

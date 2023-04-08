@@ -28,6 +28,11 @@ type Config struct {
 	} `yaml:"system"`
 }
 
+type AccessControl struct {
+	AllowedUserID map[string]bool `yaml:"allowedUserID,omitempty"`
+	AllowedChatID map[string]bool `yaml:"allowedChatID,omitempty"`
+}
+
 func ReadConfig() Config {
 	exe, err := os.Executable()
 	if err != nil {
@@ -50,4 +55,27 @@ func ReadConfig() Config {
 	}
 
 	return config
+}
+
+func ReadAccessList() AccessControl {
+	exe, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+	exPath := filepath.Dir(exe)
+	aclPath := filepath.Join(exPath, "acl.yml")
+
+	aclFile, err := ioutil.ReadFile(aclPath)
+	if err != nil {
+		log.Error("fail to ready acl file %s, %v", aclPath, err)
+		panic(err)
+	}
+
+	var acl AccessControl
+	err = yaml.Unmarshal(aclFile, &acl)
+	if err != nil {
+		log.Error("fail to parse acl file %s, %v", aclPath, err)
+		panic(err)
+	}
+	return acl
 }

@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"chloe/ai"
 	"chloe/botservice"
 	"chloe/util"
 
@@ -37,14 +36,8 @@ func main() {
 	log.Info("openai bot Chloe Started.")
 
 	config := util.ReadConfig()
+	acl := util.ReadAccessList()
+	service := botservice.NewTgBotService(config, acl)
 
-	openaiConfig := ai.AIConfig{
-		BotName:        config.BotName,
-		Model:          config.OpenAI.Model,
-		ApiKey:         config.OpenAI.APIKey,
-		ContextTimeout: config.OpenAI.ContextTimeout,
-	}
-
-	service := botservice.NewTgBotService(config.Telegram.BotToken, openaiConfig)
 	service.Run()
 }

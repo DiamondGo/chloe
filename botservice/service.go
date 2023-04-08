@@ -31,10 +31,20 @@ type BotTalkService struct {
 	textToSpeech   def.TextToSpeech
 	imageGenerator def.ImageGenerator
 	config         ai.AIConfig
+	accessControl  util.AccessControl
 	loop           bool
 }
 
-func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
+// func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
+func NewTgBotService(config util.Config, acl util.AccessControl) def.BotService {
+	aicfg := ai.AIConfig{
+		BotName:        config.BotName,
+		Model:          config.OpenAI.Model,
+		ApiKey:         config.OpenAI.APIKey,
+		ContextTimeout: config.OpenAI.ContextTimeout,
+	}
+	tgbotToken := config.Telegram.BotToken
+
 	bot, err := im.NewTelegramBot(tgbotToken)
 	if err != nil {
 		log.Error("failed to start telegram bot %v", err)
@@ -46,6 +56,7 @@ func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 		textToSpeech:   ai.NewPyServiceTTS(),
 		imageGenerator: ai.NewImageGenerator(aicfg.ApiKey),
 		config:         aicfg,
+		accessControl:  acl,
 		loop:           true,
 	}
 }
@@ -77,20 +88,46 @@ func (s *BotTalkService) Run() {
 		user := m.GetUser()
 		uid = user.GetID()
 		chat := m.GetChat()
+		cid := chat.GetID()
 		voice, voiceCleaner := m.GetVoice()
 		msgText := m.GetText()
 		msgID := m.GetID()
 
+		var allowed bool
+		allowed = s.accessControl.AllowedUserID[uid.String()]
+		if !allowed {
+			allowed = s.accessControl.AllowedChatID[cid.String()]
+		}
+
 		task := func() {
 			defer func() { _ = recover() }()
+
+			if voice != "" {
+				defer voiceCleaner()
+			}
+
 			memberCnt := chat.GetMemberCount()
 			botUsername := chat.GetSelf().GetUserName()
 
 			var text string
 			var err error
 
+			if memberCnt <= 2 && !allowed {
+				chat.ReplyMessage(
+					"Sorry, this AI assistant is not allowed in this conversation."+
+						" Please contact the administrator for access.",
+					msgID,
+				)
+				log.Info(
+					"access denied for user '%s' in chat '%s', message text: %s",
+					uid.String(),
+					cid.String(),
+					msgText,
+				)
+				return
+			}
+
 			if voice != "" {
-				defer voiceCleaner()
 				// get text from voice
 				var mp3 string
 				var cleaner def.CleanFunc
@@ -114,6 +151,15 @@ func (s *BotTalkService) Run() {
 					uid,
 					text,
 				)
+				if !allowed {
+					chat.ReplyMessage(
+						"Sorry, AI assistant is not allow to draw in this conversation."+
+							" Please contact the administrator for access.",
+						msgID,
+					)
+					log.Info("access denied for user '%s' in chat '%s'", uid.String(), cid.String())
+					return
+				}
 				img, cleaner, err := s.imageGenerator.Generate(desc, size)
 				if err != nil {
 					chat.ReplyMessage(err.Error(), msgID)
@@ -126,8 +172,18 @@ func (s *BotTalkService) Run() {
 					return
 				}
 
+				if !allowed {
+					chat.ReplyMessage(
+						"Sorry, this AI assistant is not allowed in this conversation."+
+							" Please contact the administrator for access.",
+						msgID,
+					)
+					log.Info("access denied for user '%s' in chat '%s'", uid.String(), cid.String())
+					return
+				}
+
 				log.Info("received question from %s, id %d: %s", user.GetUserName(), uid, text)
-				talk := s.talkFact.GetTalk(chat.GetID())
+				talk := s.talkFact.GetTalk(cid)
 				answer := talk.Ask(text)
 
 				if voice == "" {
