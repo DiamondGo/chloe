@@ -52,7 +52,6 @@ func NewTgBotService(tgbotToken string, aicfg ai.AIConfig) def.BotService {
 
 func (s *BotTalkService) Run() {
 	sigchnl := make(chan os.Signal, 1)
-	pool := gohelper.NewTaskPool[def.UserID](3, 1)
 	signal.Notify(sigchnl)
 	go func() {
 		for {
@@ -60,6 +59,8 @@ func (s *BotTalkService) Run() {
 			s.handleSignal(sig)
 		}
 	}()
+
+	pool := gohelper.NewTaskPool[def.UserID](3, 1)
 	for m := range s.bot.GetMessages() {
 		var uid def.UserID
 		if m == nil || m.GetUser() == nil || m.GetUser().GetID() == uid || m.GetChat() == nil {
@@ -73,69 +74,75 @@ func (s *BotTalkService) Run() {
 			continue
 		}
 
-		uid = m.GetUser().GetID()
+		user := m.GetUser()
+		uid = user.GetID()
+		chat := m.GetChat()
+		voice, voiceCleaner := m.GetVoice()
+		msgText := m.GetText()
+		msgID := m.GetID()
+
 		task := func() {
 			defer func() { _ = recover() }()
-			chat := m.GetChat()
 			memberCnt := chat.GetMemberCount()
 			botUsername := chat.GetSelf().GetUserName()
 
 			var text string
 			var err error
 
-			voice, cleaner := m.GetVoice()
 			if voice != "" {
-				defer cleaner()
+				defer voiceCleaner()
 				// get text from voice
+				var mp3 string
+				var cleaner def.CleanFunc
 				if strings.EqualFold(filepath.Ext(voice), ".oga") {
-					voice, cleaner = util.ConvertToMp3(voice)
+					mp3, cleaner = util.ConvertToMp3(voice)
 					defer cleaner()
 				}
-				text, err = s.speechToText.Convert(voice)
+				text, err = s.speechToText.Convert(mp3)
 				if err != nil {
 					log.Warn("speech to text failed, %v", err)
 				}
-			} else if m.GetText() != "" {
-				text = m.GetText()
+			} else if msgText != "" {
+				text = msgText
 			}
 
 			if size, desc := s.isDrawCommand(text); size != "" {
 				// draw image
 				log.Debug(
 					"received image request from %s, id %d: %s",
-					m.GetUser().GetUserName(),
-					m.GetUser().GetID(),
+					user.GetUserName(),
+					uid,
 					text,
 				)
 				img, cleaner, err := s.imageGenerator.Generate(desc, size)
 				if err != nil {
-					chat.ReplyMessage(err.Error(), m.GetID())
+					chat.ReplyMessage(err.Error(), msgID)
 					return
 				}
 				defer cleaner()
-				chat.ReplyImage(img, m.GetID())
+				chat.ReplyImage(img, msgID)
 			} else {
 				if memberCnt > 2 && !s.isMentioned(text, botUsername) {
 					return
 				}
 
-				log.Info("received question from %s, id %d: %s", m.GetUser().GetUserName(), m.GetUser().GetID(), text)
+				log.Info("received question from %s, id %d: %s", user.GetUserName(), uid, text)
 				talk := s.talkFact.GetTalk(chat.GetID())
 				answer := talk.Ask(text)
 
 				if voice == "" {
-					chat.ReplyMessage(answer, m.GetID())
+					chat.ReplyMessage(answer, msgID)
 				} else {
-					chat.QuoteMessage(answer, m.GetID(), "Transcription:\n"+text)
+					chat.QuoteMessage(answer, msgID, "Transcription:\n"+text)
 					if vf, cleaner, err := s.textToSpeech.Convert(answer); err != nil {
 						log.Error(`convert text "%s" to speech failed, %v`, text, err)
 					} else {
 						defer cleaner()
-						chat.ReplyVoice(vf, m.GetID())
-						log.Info("voice replied to %s", m.GetUser().GetUserName())
+						chat.ReplyVoice(vf, msgID)
+						log.Info("voice replied to %s", user.GetUserName())
 					}
 				}
-				log.Info("replied to %s", m.GetUser().GetUserName())
+				log.Info("replied to %s", user.GetUserName())
 			}
 		}
 		pool.Run(uid, task)
