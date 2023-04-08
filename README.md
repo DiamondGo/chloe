@@ -12,7 +12,12 @@ go run main.go --tgtoken xxxxxx \
 
 Have fun!
 
-Ask question in text:
+Ask question in text:  
 ![ask question in text](https://github.com/DiamondGo/blob/blob/chloe/ask_coding.jpg?raw=true)
 
 
+Ask question in voice(if you want a reply in voice you need to setup pyservice localy):  
+![ask question in text](https://github.com/DiamondGo/blob/blob/chloe/tts.jpg?raw=true)
+
+Draw picture(Dall-e 2):  
+![ask question in text](https://github.com/DiamondGo/blob/blob/chloe/draw_pic.jpg?raw=true)
