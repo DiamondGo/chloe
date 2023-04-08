@@ -6,8 +6,13 @@ command:
 go run main.go --tgtoken xxxxxx \
      --name Chloe \
      --model gpt-3.5-turbo \
-     --aikey xxxxxxxxxx \
-     --contextTimeout 30
+     --aikey sk-xxxxxxxxxx \
+     --contextTimeout 300
 
 
 Have fun!
+
+Ask question in text:
+![ask question in text](https://github.com/DiamondGo/blob/chloe/ask_coding.jpg?raw=true)
+
+
