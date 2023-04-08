@@ -5,19 +5,17 @@
 package main
 
 import (
-	"flag"
 	"os"
 	"path/filepath"
 
 	"chloe/ai"
 	"chloe/botservice"
+	"chloe/util"
 
 	log "github.com/jeanphorn/log4go"
-	"github.com/sashabaranov/go-openai"
 )
 
 func initLog() {
-	// init app
 	exe, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -38,24 +36,15 @@ func main() {
 	initLog()
 	log.Info("openai bot Chloe Started.")
 
-	tgBotToken := flag.String("tgtoken", "", "telegram bot token")
-	botName := flag.String("name", "Chloe", "ai bot name")
-	model := flag.String("model", openai.GPT3Dot5Turbo, "openai model")
-	apiKey := flag.String("aikey", "", "openai api key")
-	contextTimeout := flag.Int("contextTimeout", 60, "context awareness timeout in seconds")
-
-	flag.Parse()
-	if *tgBotToken == "" || *botName == "" || *model == "" || *apiKey == "" {
-		panic("")
-	}
+	config := util.ReadConfig()
 
 	openaiConfig := ai.AIConfig{
-		BotName:        *botName,
-		Model:          *model,
-		ApiKey:         *apiKey,
-		ContextTimeout: *contextTimeout,
+		BotName:        config.BotName,
+		Model:          config.OpenAI.Model,
+		ApiKey:         config.OpenAI.APIKey,
+		ContextTimeout: config.OpenAI.ContextTimeout,
 	}
 
-	service := botservice.NewTgBotService(*tgBotToken, openaiConfig)
+	service := botservice.NewTgBotService(config.Telegram.BotToken, openaiConfig)
 	service.Run()
 }

@@ -1,0 +1,12 @@
+botName: Chloe
+
+openAI:
+  apiKey: sk-xxxXXXXxxXXXXXXXXXXXXXXXXXXxxXXXXXXXXXXXXXXXXXXX
+  model: gpt-3.5-turbo
+  contextTimeout: 300
+
+telegram:
+  botToken: 1234567890:ABCxxXXXXXXXXXXXXXXXX0XXXXXXXXXXXXX
+
+system:
+  whitelistEnabled: true
