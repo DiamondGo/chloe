@@ -13,6 +13,6 @@ go run main.go --tgtoken xxxxxx \
 Have fun!
 
 Ask question in text:
-![ask question in text](https://github.com/DiamondGo/blob/chloe/ask_coding.jpg?raw=true)
+![ask question in text](https://github.com/DiamondGo/blob/blob/chloe/ask_coding.jpg?raw=true)
 
 
