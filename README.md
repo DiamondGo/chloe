@@ -4,10 +4,10 @@ You can talk to her 1 on 1 or in group chat. In group chat you need to name her 
 
 Please change config.yml and put your own keys there.
 
-run command:
-go run main.go
-or:
-go build && ./chloe
+run command:  
+go run main.go  
+or:  
+go build && ./chloe  
 
 Have fun!
 
