@@ -52,6 +52,7 @@ type AIConfig struct {
 type qa struct {
 	q string
 	a string
+	s string
 }
 
 type OpenAITalk struct {
@@ -74,12 +75,8 @@ func NewTalk(cfg AIConfig) def.Conversation {
 		id:  def.ConversationId(atomic.AddInt64(&talkId, 1)),
 		bot: cfg.BotName,
 		greeting: qa{
-			q: fmt.Sprintf(
-				"Hello, can I call you %s in our following coversation?",
-				cfg.BotName,
-			),
-			a: fmt.Sprintf(
-				"Of course, you can call me %s. How can I assist you today?",
+			s: fmt.Sprintf(
+				"You are a helpful assistant. Your name is %s.",
 				cfg.BotName,
 			),
 		},
@@ -100,12 +97,22 @@ func (conv *OpenAITalk) Ask(q string) string {
 
 	var messages []openai.ChatCompletionMessage
 	for _, msg := range conv.messageQueue {
-		messages = append(messages,
-			openai.ChatCompletionMessage{
-				Role:    openai.ChatMessageRoleUser,
-				Content: msg.q,
-			},
-		)
+		if msg.s != "" {
+			messages = append(messages,
+				openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: msg.s,
+				},
+			)
+		}
+		if msg.q != "" {
+			messages = append(messages,
+				openai.ChatCompletionMessage{
+					Role:    openai.ChatMessageRoleUser,
+					Content: msg.q,
+				},
+			)
+		}
 		if msg.a != "" {
 			messages = append(messages,
 				openai.ChatCompletionMessage{
@@ -157,14 +164,7 @@ func (conv *OpenAITalk) Ask(q string) string {
 }
 
 func (conv *OpenAITalk) PrepareNewMessage(msg string) {
-	totalTtoken := getTokenCount(
-		msg,
-	) + getTokenCount(
-		conv.greeting.q,
-	) + getTokenCount(
-		conv.greeting.a,
-	)
-
+	totalTtoken := getTokenCount(msg) + getTokenCount(conv.greeting.s)
 	newQueue := []qa{{q: msg}}
 
 	now := time.Now()
