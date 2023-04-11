@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  chloe:
+    image: chloe:latest
+    container_name: chloe
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - DETECTLANG_APIKEY=${DETECTLANG_APIKEY}
+        - CONFIG=${CONFIG}
+        - ACL=${ACL}
+        - LOG=${LOG}
+    volumes:
+      - ${CONFIG}:/root/go/src/chloe/config.yml
+      - ${ACL}:/root/go/src/chloe/acl.yml
+      - ${LOG}:/root/go/src/chloe/log
