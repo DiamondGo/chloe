@@ -13,7 +13,6 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/hajimehoshi/go-mp3 v0.3.3 // indirect
 	github.com/hajimehoshi/oto/v2 v2.2.0 // indirect
-	github.com/hegedustibor/htgo-tts v0.0.0-20220821045517-04f3cda7a12f // indirect
 	github.com/mbenkmann/goformat v0.0.0-20180512004123-256ef38c4271 // indirect
 	github.com/sashabaranov/go-openai v1.7.0 // indirect
 	github.com/toolkits/file v0.0.0-20160325033739-a5b3c5147e07 // indirect

@@ -7,19 +7,20 @@ package ai
 import (
 	"chloe/def"
 	"context"
-	"io/ioutil"
+	//"io/ioutil"
 	"os"
 	"time"
 
 	pys "chloe/external/service"
 
-	htgotts "github.com/hegedustibor/htgo-tts"
-	"github.com/hegedustibor/htgo-tts/voices"
+	//htgotts "github.com/hegedustibor/htgo-tts"
+	//"github.com/hegedustibor/htgo-tts/voices"
 	log "github.com/jeanphorn/log4go"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+/*
 type googleTransTTS struct {
 }
 
@@ -48,6 +49,7 @@ func (tts *googleTransTTS) Convert(text string) (string, def.CleanFunc, error) {
 		_ = os.Remove(dir)
 	}, nil
 }
+*/
 
 type pyServiceTTS struct {
 	client pys.GoogleTranslateTTSClient
