@@ -1,7 +1,9 @@
 allowedUserID:
   blocked_userid: false
   add_your_id_here: true
+  allow_all: true
 
 allowedChatID:
   blocked_chatid: false
   add_your_id_here: true
+  allow_all: true

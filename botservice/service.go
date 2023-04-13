@@ -94,9 +94,9 @@ func (s *BotTalkService) Run() {
 		msgID := m.GetID()
 
 		var allowed bool
-		allowed = s.accessControl.AllowedUserID[uid.String()]
+		allowed = s.accessControl.AllowUser(uid)
 		if !allowed {
-			allowed = s.accessControl.AllowedChatID[cid.String()]
+			allowed = s.accessControl.AllowChat(cid)
 		}
 
 		task := func() {

@@ -5,12 +5,17 @@
 package util
 
 import (
+	"chloe/def"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	log "github.com/jeanphorn/log4go"
 	"gopkg.in/yaml.v3"
+)
+
+const (
+	allowAll = "allow_all"
 )
 
 type Config struct {
@@ -31,6 +36,22 @@ type Config struct {
 type AccessControl struct {
 	AllowedUserID map[string]bool `yaml:"allowedUserID,omitempty"`
 	AllowedChatID map[string]bool `yaml:"allowedChatID,omitempty"`
+}
+
+func (acl AccessControl) AllowUser(uid def.UserID) bool {
+	allowed := acl.AllowedUserID[uid.String()]
+	if !allowed {
+		allowed = acl.AllowedUserID[allowAll] // allow all
+	}
+	return allowed
+}
+
+func (acl AccessControl) AllowChat(cid def.ChatID) bool {
+	allowed := acl.AllowedChatID[cid.String()]
+	if !allowed {
+		allowed = acl.AllowedChatID[allowAll] // allow all
+	}
+	return allowed
 }
 
 func ReadConfig() Config {
