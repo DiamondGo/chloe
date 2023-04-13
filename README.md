@@ -4,7 +4,7 @@ You can talk to her 1 on 1 or in group chat. In group chat you need to name her 
 
 Please change config.yml and put your own keys there.
 
-You need to get 4 things done to make this work:
+You need to get 3 things done to make this work:
 * An OpenAI apikey: get one free at https://platform.openai.com/account .
 * A telegram bot: send /newbot to BotFather on telegram.
 * (optional) An api key on https://detectlanguage.com/ for free, if you want to produce text-to-speech synthesis voice.
@@ -14,7 +14,7 @@ go run main.go
 or:  
 go build && ./chloe  
 
-Run with docker:
+Run with docker(recommended, this includes pyservice):
 * in docker dir
 * modify your .env file for detectlanguage apikey
 * docker-compose up
