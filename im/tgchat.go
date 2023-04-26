@@ -7,6 +7,7 @@ package im
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -15,6 +16,11 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	log "github.com/jeanphorn/log4go"
+)
+
+const (
+	// prefix for Telegram IDs
+	preTG = "tg-"
 )
 
 type tgBotCache struct {
@@ -77,18 +83,20 @@ func (bot *TelegramBot) messageLoop() {
 				log.Debug("voice file link %s", link)
 				voiceFile, cleaner := util.DownloadTempFile(link)
 				m = &tgMessage{
-					id:         def.MessageID(update.Message.MessageID),
-					userId:     def.UserID(update.Message.From.ID),
-					chatId:     def.ChatID(update.Message.Chat.ID),
+					id: def.MessageID(
+						preTG + strconv.FormatInt(int64(update.Message.MessageID), 10),
+					),
+					userId:     def.UserID(preTG + strconv.FormatInt(update.Message.From.ID, 10)),
+					chatId:     def.ChatID(preTG + strconv.FormatInt(update.Message.Chat.ID, 10)),
 					bot:        bot,
 					audioFile:  voiceFile,
 					audioClean: cleaner,
 				}
 			} else if update.Message.Text != "" {
 				m = &tgMessage{
-					id:     def.MessageID(update.Message.MessageID),
-					userId: def.UserID(update.Message.From.ID),
-					chatId: def.ChatID(update.Message.Chat.ID),
+					id:     def.MessageID(preTG + strconv.FormatInt(int64(update.Message.MessageID), 10)),
+					userId: def.UserID(preTG + strconv.FormatInt(update.Message.From.ID, 10)),
+					chatId: def.ChatID(preTG + strconv.FormatInt(update.Message.Chat.ID, 10)),
 					bot:    bot,
 					text:   update.Message.Text,
 				}
@@ -107,7 +115,7 @@ func (bot *TelegramBot) lookupChat(id def.ChatID) def.Chat {
 
 	count, _ := bot.api.GetChatMembersCount(tgbotapi.ChatMemberCountConfig{
 		ChatConfig: tgbotapi.ChatConfig{
-			ChatID: int64(id),
+			ChatID: bot.getInt64ChatId(id),
 		},
 	})
 	chat = &tgChat{
@@ -129,8 +137,8 @@ func (bot *TelegramBot) lookupUser(uid def.UserID, cid def.ChatID) def.User {
 	var user def.User
 	chatMembersConfig := tgbotapi.GetChatMemberConfig{
 		ChatConfigWithUser: tgbotapi.ChatConfigWithUser{
-			UserID: int64(uid),
-			ChatID: int64(cid),
+			UserID: bot.getInt64UserId(uid),
+			ChatID: bot.getInt64ChatId(cid),
 		},
 	}
 	chatMember, err := bot.api.GetChatMember(chatMembersConfig)
@@ -203,16 +211,16 @@ func (c *tgChat) SendMessage(m string) {
 func (c *tgChat) ReplyMessage(m string, to def.MessageID) {
 
 	mksafe := escapeSafeForMarkdown(m)
-	msg := tgbotapi.NewMessage(int64(c.id), mksafe)
+	msg := tgbotapi.NewMessage(c.bot.getInt64ChatId(c.id), mksafe)
 	msg.ParseMode = "MarkdownV2"
-	msg.ReplyToMessageID = int(to)
+	msg.ReplyToMessageID = c.bot.getIntMessageId(to)
 
 	_, err := c.bot.api.Send(msg)
 	if err != nil {
 		log.Info("error: %#v in sending message: %#v", err, msg)
-		fallbackMsg := tgbotapi.NewMessage(int64(c.id), m)
+		fallbackMsg := tgbotapi.NewMessage(c.bot.getInt64ChatId(c.id), m)
 		fallbackMsg.ParseMode = ""
-		fallbackMsg.ReplyToMessageID = int(to)
+		fallbackMsg.ReplyToMessageID = c.bot.getIntMessageId(to)
 		_, err := c.bot.api.Send(fallbackMsg)
 		if err != nil {
 			log.Info("error: %#v in retry sending message: %#v", err, fallbackMsg)
@@ -226,9 +234,9 @@ func (c *tgChat) QuoteMessage(m string, to def.MessageID, quote string) {
 	mksafe += "  \n"
 	mksafe += escapeSafeForMarkdown(m)
 
-	msg := tgbotapi.NewMessage(int64(c.id), mksafe)
+	msg := tgbotapi.NewMessage(c.bot.getInt64ChatId(c.id), mksafe)
 	msg.ParseMode = "MarkdownV2"
-	msg.ReplyToMessageID = int(to)
+	msg.ReplyToMessageID = c.bot.getIntMessageId(to)
 
 	_, err := c.bot.api.Send(msg)
 	if err != nil {
@@ -263,8 +271,8 @@ func (c *tgChat) ReplyImage(img string, to def.MessageID) {
 		Bytes: buffer,
 	}
 
-	photoMsg := tgbotapi.NewPhoto(int64(c.id), requestFileData)
-	photoMsg.ReplyToMessageID = int(to)
+	photoMsg := tgbotapi.NewPhoto(c.bot.getInt64ChatId(c.id), requestFileData)
+	photoMsg.ReplyToMessageID = c.bot.getIntMessageId(to)
 	if _, err = c.bot.api.Send(photoMsg); err != nil {
 		log.Error("failed to send image to user")
 	}
@@ -303,8 +311,8 @@ func (c *tgChat) ReplyVoice(aud string, to def.MessageID) {
 		media.Media = append(media.Media, vm)
 		voiceMsg := tgbotapi.NewMediaGroup(int64(c.id), media.Media)
 	*/
-	voiceMsg := tgbotapi.NewAudio(int64(c.id), requestFileData)
-	voiceMsg.ReplyToMessageID = int(to)
+	voiceMsg := tgbotapi.NewAudio(c.bot.getInt64ChatId(c.id), requestFileData)
+	voiceMsg.ReplyToMessageID = c.bot.getIntMessageId(to)
 	if _, err = c.bot.api.Send(voiceMsg); err != nil {
 		log.Error("failed to send image to user %v", err)
 		return
@@ -315,7 +323,7 @@ func (c *tgChat) ReplyVoice(aud string, to def.MessageID) {
 
 func (c *tgChat) GetSelf() def.User {
 	return &tgUser{
-		id:        def.UserID(c.bot.api.Self.ID),
+		id:        def.UserID(preTG + strconv.FormatInt(c.bot.api.Self.ID, 10)),
 		firstName: c.bot.api.Self.FirstName,
 		userName:  c.bot.api.Self.UserName,
 		chatId:    c.id,
@@ -393,4 +401,34 @@ func (c *tgBotCache) cacheChatUser(cid def.ChatID, uid def.UserID, user def.User
 		c.users[cid] = chat
 	}
 	chat[uid] = user
+}
+
+func (bot *TelegramBot) getInt64ChatId(cid def.ChatID) int64 {
+	id := string(cid)
+	id = id[len(preTG):]
+	n, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func (bot *TelegramBot) getInt64UserId(uid def.UserID) int64 {
+	id := string(uid)
+	id = id[len(preTG):]
+	n, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+func (bot *TelegramBot) getIntMessageId(mid def.MessageID) int {
+	id := string(mid)
+	id = id[len(preTG):]
+	n, err := strconv.ParseInt(id, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return int(n)
 }
