@@ -1,3 +1,6 @@
 [submodule "pyservice"]
 	path = pyservice
 	url = https://github.com/DiamondGo/pyservice.git
+[submodule "proto"]
+	path = proto
+	url = https://github.com/DiamondGo/proto.git
