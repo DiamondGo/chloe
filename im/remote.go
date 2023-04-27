@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"strings"
+	"time"
 
 	psg "chloe/proto/service/go"
 
@@ -115,6 +116,7 @@ func (s *remoteChatServer) ChatStream(stream psg.Chatting_ChatStreamServer) erro
 			if err := stream.Send(msg); err != nil {
 				log.Error("failed to send response: ", err)
 				retry--
+				time.Sleep(5 * time.Second)
 			} else {
 				break
 			}
