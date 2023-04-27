@@ -5,6 +5,7 @@
 package botservice
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -25,7 +26,7 @@ import (
 var puncs = []string{",", ".", "，", "。", "!", "?", "！", "？"}
 
 type BotTalkService struct {
-	bot            def.MessageBot
+	bots           []def.MessageBot
 	talkFact       def.ConversationFactory
 	speechToText   def.SpeechToText
 	textToSpeech   def.TextToSpeech
@@ -45,12 +46,19 @@ func NewTgBotService(config util.Config, acl util.AccessControl) def.BotService 
 	}
 	tgbotToken := config.Telegram.BotToken
 
-	bot, err := im.NewTelegramBot(tgbotToken)
+	tgBot, err := im.NewTelegramBot(tgbotToken)
 	if err != nil {
 		log.Error("failed to start telegram bot %v", err)
 	}
+	fmt.Println(tgBot)
+
+	remoteBot, err := im.NewRemoteChatBot("2952")
+	if err != nil {
+		log.Error("failed to start rpc bot %v", err)
+	}
+
 	return &BotTalkService{
-		bot:            bot,
+		bots:           []def.MessageBot{tgBot, remoteBot},
 		talkFact:       ai.NewTalkFactory(aicfg),
 		speechToText:   ai.NewSpeech2Text(aicfg.ApiKey),
 		textToSpeech:   ai.NewPyServiceTTS(),
@@ -59,6 +67,19 @@ func NewTgBotService(config util.Config, acl util.AccessControl) def.BotService 
 		accessControl:  acl,
 		loop:           true,
 	}
+}
+
+func (s *BotTalkService) listenToAll() <-chan def.Message {
+	ch := make(chan def.Message, len(s.bots))
+	f := func(bot def.MessageBot) {
+		for m := range bot.GetMessages() {
+			ch <- m
+		}
+	}
+	for _, bot := range s.bots {
+		go f(bot)
+	}
+	return ch
 }
 
 func (s *BotTalkService) Run() {
@@ -72,7 +93,7 @@ func (s *BotTalkService) Run() {
 	}()
 
 	pool := gohelper.NewTaskPool[def.UserID](3, 1)
-	for m := range s.bot.GetMessages() {
+	for m := range s.listenToAll() {
 		var uid def.UserID
 		if m == nil || m.GetUser() == nil || m.GetUser().GetID() == uid || m.GetChat() == nil {
 			log.Warn("received empty message, skip it")

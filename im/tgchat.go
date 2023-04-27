@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 
 	"chloe/def"
 	"chloe/util"
@@ -23,25 +22,16 @@ const (
 	preTG = "tg-"
 )
 
-type tgBotCache struct {
-	guard sync.Mutex
-	chats map[def.ChatID]def.Chat
-	users map[def.ChatID]map[def.UserID]def.User
-}
-
 type TelegramBot struct {
 	msgQueue chan def.Message
 	api      *tgbotapi.BotAPI
-	cache    tgBotCache
+	cache    *chatCache
 }
 
 func NewTelegramBot(token string) (def.MessageBot, error) {
 	bot := &TelegramBot{
 		msgQueue: make(chan def.Message, 100),
-		cache: tgBotCache{
-			chats: make(map[def.ChatID]def.Chat),
-			users: make(map[def.ChatID]map[def.UserID]def.User),
-		},
+		cache:    newChatCache(),
 	}
 
 	api, err := tgbotapi.NewBotAPI(token)
@@ -109,7 +99,7 @@ func (bot *TelegramBot) messageLoop() {
 
 func (bot *TelegramBot) lookupChat(id def.ChatID) def.Chat {
 	var chat def.Chat
-	if chat = bot.cache.getChatById(id); chat != nil {
+	if chat = bot.cache.getChat(id); chat != nil {
 		return chat
 	}
 
@@ -124,7 +114,7 @@ func (bot *TelegramBot) lookupChat(id def.ChatID) def.Chat {
 		bot:         bot,
 	}
 
-	bot.cache.cacheChatById(id, chat)
+	bot.cache.cacheChat(id, chat)
 
 	return chat
 }
@@ -362,45 +352,6 @@ func escapeSafeForMarkdown(s string) string {
 	s = strings.ReplaceAll(s, "=", `\=`)
 
 	return s
-}
-
-func (c *tgBotCache) getChatById(id def.ChatID) def.Chat {
-	c.guard.Lock()
-	defer c.guard.Unlock()
-
-	if chat, exists := c.chats[id]; exists {
-		return chat
-	}
-	return nil
-}
-
-func (c *tgBotCache) cacheChatById(id def.ChatID, chat def.Chat) {
-	c.guard.Lock()
-	defer c.guard.Unlock()
-
-	c.chats[id] = chat
-}
-
-func (c *tgBotCache) getChatUser(cid def.ChatID, uid def.UserID) def.User {
-	c.guard.Lock()
-	defer c.guard.Unlock()
-
-	if user, exists := c.users[cid][uid]; exists {
-		return user
-	}
-	return nil
-}
-
-func (c *tgBotCache) cacheChatUser(cid def.ChatID, uid def.UserID, user def.User) {
-	c.guard.Lock()
-	defer c.guard.Unlock()
-
-	chat, exists := c.users[cid]
-	if !exists {
-		chat = make(map[def.UserID]def.User)
-		c.users[cid] = chat
-	}
-	chat[uid] = user
 }
 
 func (bot *TelegramBot) getInt64ChatId(cid def.ChatID) int64 {

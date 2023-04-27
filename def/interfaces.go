@@ -19,6 +19,10 @@ func (cid ChatID) String() string {
 	return string(cid)
 }
 
+func (mid MessageID) String() string {
+	return string(mid)
+}
+
 type Chat interface {
 	GetID() ChatID
 	GetMemberCount() int

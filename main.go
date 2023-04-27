@@ -5,10 +5,13 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"chloe/botservice"
+	"chloe/im"
 	"chloe/util"
 
 	log "github.com/jeanphorn/log4go"
@@ -40,4 +43,10 @@ func main() {
 	service := botservice.NewTgBotService(config, acl)
 
 	service.Run()
+}
+
+func main2() {
+	fmt.Println("hello grpc")
+	im.NewRemoteChatBot("2952")
+	time.Sleep(time.Hour)
 }
