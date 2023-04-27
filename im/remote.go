@@ -110,7 +110,15 @@ func (s *remoteChatServer) ChatStream(stream psg.Chatting_ChatStreamServer) erro
 	}()
 
 	for msg := range s.bot.outgoingQ {
-		stream.Send(msg)
+		retry := 5
+		for retry > 0 {
+			if err := stream.Send(msg); err != nil {
+				log.Error("failed to send response: ", err)
+				retry--
+			} else {
+				break
+			}
+		}
 	}
 
 	return nil
