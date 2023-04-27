@@ -203,7 +203,7 @@ func (s *BotTalkService) Run() {
 					return
 				}
 
-				log.Info("received question from %s, id %d: %s", user.GetUserName(), uid, text)
+				log.Info("received question from %s, id %s: %s", user.GetUserName(), uid.String(), text)
 				talk := s.talkFact.GetTalk(cid)
 				answer := talk.Ask(text)
 
