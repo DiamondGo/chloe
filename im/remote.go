@@ -6,15 +6,18 @@ package im
 
 import (
 	"chloe/def"
+	"context"
 	"io"
 	"net"
 	"strings"
+	"sync"
 	"time"
 
 	psg "chloe/proto/service/go"
 
 	log "github.com/jeanphorn/log4go"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
 )
 
 const (
@@ -24,9 +27,9 @@ const (
 
 func NewRemoteChatBot(port string) (def.MessageBot, error) {
 	bot := &remoteBot{
-		msgQueue:  make(chan def.Message, 100),
-		outgoingQ: make(chan *psg.Message, 100),
-		cache:     newChatCache(),
+		msgQueue:      make(chan def.Message, 100),
+		outStream:     make(chan *psg.Message, 100),
+		replyChannels: sync.Map{},
 	}
 
 	lis, err := net.Listen("tcp", ":"+port)
@@ -34,6 +37,12 @@ func NewRemoteChatBot(port string) (def.MessageBot, error) {
 		log.Error("fail to start grpc server on port %s", port, err)
 	}
 	var opts []grpc.ServerOption
+
+	opts = append(opts,
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			MaxConnectionIdle: 5 * time.Minute,
+		}),
+	)
 
 	grpcServer := grpc.NewServer(opts...)
 	psg.RegisterChattingServer(grpcServer, newRemoteChatServer(bot))
@@ -54,28 +63,46 @@ func newRemoteChatServer(bot *remoteBot) psg.ChattingServer {
 	}
 }
 
+func (s *remoteChatServer) Chat(ctx context.Context, msg *psg.Message) (*psg.MessageList, error) {
+	chat := msg.Chat
+	chatId := chat.Id
+
+	user := msg.Sender
+
+	rMsg := &remoteMessage{
+		bot:  s.bot,
+		id:   msg.Id,
+		text: msg.Text,
+		chat: &remoteChat{
+			bot: s.bot,
+			id:  chatId,
+		},
+		from: &remoteUser{
+			id:       user.Id,
+			username: user.UserName,
+		},
+	}
+
+	ch := make(chan *psg.Message, 3)
+	key := messageKey{
+		mid: rMsg.GetID(),
+		cid: rMsg.chat.GetID(),
+	}
+	s.bot.replyChannels.Store(key, ch)
+
+	s.bot.msgQueue <- rMsg
+
+	replyMsgList := &psg.MessageList{}
+	for replyMsg := range ch {
+		replyMsgList.Messages = append(replyMsgList.Messages, replyMsg)
+	}
+
+	s.bot.replyChannels.Delete(key)
+
+	return replyMsgList, nil
+}
+
 func (s *remoteChatServer) ChatStream(stream psg.Chatting_ChatStreamServer) error {
-	/*
-		for {
-			msg, err := stream.Recv()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				return err
-			}
-
-			reply := "re: " + msg.Text
-
-			msgReply := &psg.Message{
-				ReplyToId: msg.Id,
-				Text:      reply,
-				Chat:      msg.Chat,
-			}
-
-			stream.Send(msgReply)
-		}
-	*/
 	go func() {
 		for {
 			msg, err := stream.Recv()
@@ -110,7 +137,7 @@ func (s *remoteChatServer) ChatStream(stream psg.Chatting_ChatStreamServer) erro
 		}
 	}()
 
-	for msg := range s.bot.outgoingQ {
+	for msg := range s.bot.outStream {
 		retry := 5
 		for retry > 0 {
 			if err := stream.Send(msg); err != nil {
@@ -126,10 +153,15 @@ func (s *remoteChatServer) ChatStream(stream psg.Chatting_ChatStreamServer) erro
 	return nil
 }
 
+type messageKey struct {
+	mid def.MessageID
+	cid def.ChatID
+}
+
 type remoteBot struct {
-	msgQueue  chan def.Message
-	outgoingQ chan *psg.Message
-	cache     *chatCache
+	msgQueue      chan def.Message
+	outStream     chan *psg.Message
+	replyChannels sync.Map
 }
 
 func (bot *remoteBot) GetMessages() <-chan def.Message {
@@ -224,7 +256,27 @@ func (c *remoteChat) ReplyMessage(m string, to def.MessageID) {
 			Id: c.stripId(c.id),
 		},
 	}
-	c.bot.outgoingQ <- msgReply
+	c.enqueReply(to, msgReply)
+}
+
+func (c *remoteChat) enqueReply(to def.MessageID, messages ...*psg.Message) {
+	key := messageKey{
+		mid: to,
+		cid: c.GetID(),
+	}
+
+	if chIntf, exists := c.bot.replyChannels.Load(key); exists {
+		ch := chIntf.(chan *psg.Message)
+		for _, msg := range messages {
+			ch <- msg
+		}
+		close(ch)
+	} else {
+		// push to public queue
+		for _, msg := range messages {
+			c.bot.outStream <- msg
+		}
+	}
 }
 
 func (c *remoteChat) ReplyImage(img string, to def.MessageID) {
