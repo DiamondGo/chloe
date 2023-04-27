@@ -16,3 +16,5 @@ services:
       - ${CONFIG}:/root/go/src/chloe/config.yml
       - ${ACL}:/root/go/src/chloe/acl.yml
       - ${LOG}:/root/go/src/chloe/log
+    ports:
+      - "2952:2952"

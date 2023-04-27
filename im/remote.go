@@ -28,7 +28,7 @@ func NewRemoteChatBot(port string) (def.MessageBot, error) {
 		cache:     newChatCache(),
 	}
 
-	lis, err := net.Listen("tcp", "localhost:"+port)
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		log.Error("fail to start grpc server on port %s", port, err)
 	}
