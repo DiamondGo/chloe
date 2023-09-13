@@ -26,7 +26,7 @@ RUN cd ${HOME} && tar xzvf go*.tar.gz && rm -f go*.tar.gz
 RUN git clone https://github.com/DiamondGo/Chloe.git ${CHLOE_DIR}
 RUN cd ${CHLOE_DIR} && git submodule update --init --recursive
 
-RUN cd ${CHLOE_DIR}/pyservice && pip install -r requirements.txt
+RUN cd ${CHLOE_DIR}/pyservice && pip install -r requirements.txt --break-system-packages
 
 RUN cd ${CHLOE_DIR}/pyservice && python3 -m grpc_tools.protoc -I./proto --python_out=pb --grpc_python_out=pb proto/tts.proto
 RUN cd ${CHLOE_DIR} && ${GO} install google.golang.org/protobuf/cmd/protoc-gen-go@latest \
