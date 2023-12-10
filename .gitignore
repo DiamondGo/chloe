@@ -4,3 +4,4 @@ external
 config.yml
 backup
 venv
+*.bak
